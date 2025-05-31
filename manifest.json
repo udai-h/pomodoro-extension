@@ -1,0 +1,17 @@
+{
+  "manifest_version": 3,
+  "name": "Pomodoro Bar",
+  "version": "1.0",
+  "description": "A minimal Pomodoro timer with a simple visual progress bar.",
+  "permissions": [],
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "css": ["style.css"]
+    }
+  ],
+  "action": {
+    "default_title": "Pomodoro Timer"
+  }
+}

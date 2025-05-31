@@ -1,0 +1,10 @@
+#pomodoro-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 4px;
+  width: 0%;
+  background-color: red;
+  z-index: 999999;
+  transition: width 1s linear;
+}
