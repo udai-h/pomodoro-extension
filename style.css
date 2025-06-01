@@ -6,5 +6,6 @@
   width: 0;
   background-color: red;
   z-index: 999999;
-  transition: width 1s linear;
+  transition: width 0.2s linear;
+  z-index: 9999;
 }
