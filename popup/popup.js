@@ -1,35 +1,37 @@
-document.getElementById("startBtn").addEventListener("click", () => {
-  chrome.storage.local.get(["pomodoroStartedAt", "pausedAt"], (data) => {
-    // if it is already started, nothing will be done
-    if (data.pomodoroStartedAt && !data.pausedAt) {
-      window.close();
-      return;
+const startBtn = document.getElementById("startBtn");
+const pauseBtn = document.getElementById("pauseBtn");
+const resetBtn = document.getElementById("resetBtn");
+
+startBtn.addEventListener("click", () => {
+  chrome.storage.local.get(
+    ["pomodoroStartedAt", "pomodoroState", "pausedAt"],
+    (data) => {
+      const alreadyRunning = data.pomodoroStartedAt && !data.pausedAt;
+      if (alreadyRunning) return window.close();
+
+      // if it is paused, resume
+      // otherwise start new
+      const init = {
+        pomodoroState: "work",
+        pomodoroStartedAt: Date.now(),
+        cycleCount: 0,
+        pausedAt: null,
+        from: null,
+      };
+      chrome.storage.local.set(init, () => window.close());
     }
-
-    // if it is paused, resume
-    if (data.pausedAt) {
-      const delta = Date.now() - data.pausedAt;
-      const newStart = data.pomodoroStartedAt + delta;
-      chrome.storage.local.set({ pomodoroStartedAt: newStart }, () => {
-        chrome.storage.local.remove("pausedAt", () => window.close());
-      });
-      return;
-    }
-
-    // newly start
-    chrome.storage.local.set(
-      { pomodoroStartedAt: Date.now(), pausedAt: null },
-      () => window.close()
-    );
-  });
-});
-
-document.getElementById("pauseBtn").addEventListener("click", () => {
-  chrome.storage.local.set({ pausedAt: Date.now() }, () => window.close());
-});
-
-document.getElementById("resetBtn").addEventListener("click", () => {
-  chrome.storage.local.remove(["pomodoroStartedAt", "pausedAt"], () =>
-    window.close()
   );
 });
+
+// PAUSE
+pauseBtn.addEventListener("click", () =>
+  chrome.storage.local.set({ pausedAt: Date.now() }, () => window.close())
+);
+
+// RESET
+resetBtn.addEventListener("click", () =>
+  chrome.storage.local.remove(
+    ["pomodoroState", "pomodoroStartedAt", "pausedAt", "cycleCount", "from"],
+    () => window.close()
+  )
+);

@@ -1,73 +1,159 @@
 let interval = null;
 let isPaused = false;
+let flashTimer = null;
+
+const DURATIONS = {
+  work: 25 * 60 * 10,
+  short: 5 * 60 * 10,
+  long: 30 * 60 * 10,
+  flash: 3 * 1000,
+};
+const FLASH_INTERVAL = 250;
+
+const COLOURS = {
+  work: "var(--pomodoro-bar-color-work)",
+  short: "var(--pomodoro-bar-color-short)",
+  long: "var(--pomodoro-bar-color-long)",
+  flash: "var(--pomodoro-bar-color-flash)",
+};
+
+// helper function to add state to storage
+function setState(state, startedAt = Date.now(), cycleCount = 0, from = null) {
+  chrome.storage.local.set({
+    pomodoroState: state,
+    pomodoroStartedAt: startedAt,
+    cycleCount,
+    from,
+  });
+}
 
 // create bar if there are no bar
 function createBarIfNeeded() {
+  let wrapper = document.getElementById("pomodoro-bar-wrapper");
+  if (!wrapper) {
+    wrapper = document.createElement("div");
+    wrapper.id = "pomodoro-bar-wrapper";
+    document.body.appendChild(wrapper);
+  }
+
   let bar = document.getElementById("pomodoro-bar");
   if (!bar) {
     bar = document.createElement("div");
     bar.id = "pomodoro-bar";
-    document.body.appendChild(bar);
-    bar.style.width = "0%";
+    bar.className = "pomodoro-bar";
+    wrapper.appendChild(bar);
   }
+
+  wrapper.style.display = "none";
+
   return bar;
 }
 
 // remove bar if bar exists
 function removeBarIfExists() {
-  const bar = document.getElementById("pomodoro-bar");
-  if (bar) bar.remove();
+  const wrapper = document.getElementById("pomodoro-bar-wrapper");
+  if (wrapper) wrapper.remove();
 }
 
-// start timer
-function startPomodoro(startTime) {
-  const DURATION = 25 * 60 * 1000;
-  const bar = createBarIfNeeded();
+function instantReset(bar) {
+  bar.style.transition = "none";
+  bar.style.width = "0%";
+  void bar.offsetWidth;
+  bar.style.transition = "width 0.2s linear";
+}
 
-  if (interval) clearInterval(interval);
+// flash between each status
+function startFlash(cycleCount, fromState) {
+  const bar = createBarIfNeeded();
+  let elapsed = 0;
+  bar.style.width = "100%";
+  bar.style.backgroundColor = COLOURS.flash;
+  bar.parentElement.style.display = "block";
+
+  clearInterval(flashTimer);
+  flashTimer = setInterval(() => {
+    bar.classList.toggle("pomodoro-bar-flash");
+    elapsed += FLASH_INTERVAL;
+
+    if (elapsed >= DURATIONS.flash) {
+      clearInterval(flashTimer);
+      bar.classList.remove("pomodoro-bar-flash");
+      const next =
+        fromState === "work"
+          ? cycleCount % 4 === 0
+            ? "long"
+            : "short"
+          : "work";
+      instantReset(bar);
+      setState(next, Date.now(), cycleCount);
+    }
+  }, FLASH_INTERVAL);
+}
+
+function startLoop(state, startedAt, cycleCount) {
+  clearInterval(interval);
+  clearInterval(flashTimer);
+
+  if (state === "flash") {
+    chrome.storage.local.get("from", ({ from }) =>
+      startFlash(cycleCount, from || "work")
+    );
+    return;
+  }
+
+  const total = DURATIONS[state];
+  const bar = createBarIfNeeded();
+  instantReset(bar);
+  bar.style.backgroundColor = COLOURS[state];
+  bar.parentElement.style.display = "block";
 
   interval = setInterval(() => {
     if (isPaused) return;
+    const elapsed = Date.now() - startedAt;
+    bar.style.width = Math.min((elapsed / total) * 100, 100) + "%";
 
-    const elapsed = Date.now() - startTime;
-    const percent = Math.min((elapsed / DURATION) * 100, 100);
-    bar.style.width = percent + "%";
-
-    if (elapsed >= DURATION) {
-      // stop timer
+    if (elapsed >= total) {
       clearInterval(interval);
-      // reset status by removing from storage
-      chrome.storage.local.remove("pomodoroStartedAt");
-      removeBarIfExists();
+      if (state === "work") cycleCount++;
+      setState("flash", Date.now(), cycleCount, state);
     }
   }, 200);
 }
 
-// check initial condition
-chrome.storage.local.get(["pomodoroStartedAt", "pausedAt"], (data) => {
-  isPaused = !!data.pausedAt;
-  // start if it is not on progress/paused
-  if (data.pomodoroStartedAt && !isPaused) {
-    startPomodoro(data.pomodoroStartedAt);
+// initializing the state
+chrome.storage.local.get(
+  ["pomodoroState", "pomodoroStartedAt", "cycleCount", "pausedAt"],
+  ({ pomodoroState, pomodoroStartedAt, cycleCount = 0, pausedAt }) => {
+    isPaused = !!pausedAt;
+    if (pomodoroState) {
+      startLoop(pomodoroState, pomodoroStartedAt, cycleCount);
+    }
   }
-});
+);
 
 // check change of storage status
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area !== "local") return;
-
-  if ("pausedAt" in changes) {
+  if (changes.pausedAt) {
     isPaused = !!changes.pausedAt.newValue;
   }
 
-  if ("pomodoroStartedAt" in changes) {
-    const newStart = changes.pomodoroStartedAt.newValue;
-
-    if (newStart) {
-      startPomodoro(newStart);
-    } else {
-      clearInterval(interval);
-      removeBarIfExists();
-    }
+  if (
+    changes.pomodoroState ||
+    changes.pomodoroStartedAt ||
+    changes.cycleCount
+  ) {
+    chrome.storage.local.get(
+      ["pomodoroState", "pomodoroStartedAt", "cycleCount"],
+      ({ pomodoroState, pomodoroStartedAt, cycleCount = 0 }) => {
+        if (pomodoroState) {
+          startLoop(pomodoroState, pomodoroStartedAt, cycleCount);
+        } else {
+          clearInterval(interval);
+          clearInterval(flashTimer);
+          removeBarIfExists();
+        }
+      }
+    );
   }
 });
