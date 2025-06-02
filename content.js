@@ -1,5 +1,6 @@
 let interval = null;
 let isPaused = false;
+let pausedAtTime = null;
 let flashTimer = null;
 
 const DURATIONS = {
@@ -44,7 +45,9 @@ function createBarIfNeeded() {
     wrapper.appendChild(bar);
   }
 
-  wrapper.style.display = "none";
+  if (bar.parentElement) {
+    bar.parentElement.style.display = "block";
+  }
 
   return bar;
 }
@@ -90,7 +93,7 @@ function startFlash(cycleCount, fromState) {
   }, FLASH_INTERVAL);
 }
 
-function startLoop(state, startedAt, cycleCount) {
+function startLoop(state, startedAt, cycleCount, pausedAt = null) {
   clearInterval(interval);
   clearInterval(flashTimer);
 
@@ -104,11 +107,15 @@ function startLoop(state, startedAt, cycleCount) {
   const total = DURATIONS[state];
   const bar = createBarIfNeeded();
   bar.style.backgroundColor = COLOURS[state];
-  bar.parentElement.style.display = "block";
+  const initElapsed = pausedAt ? pausedAt - startedAt : Date.now() - startedAt;
+  bar.style.width = Math.min((initElapsed / total) * 100, 100) + "%";
 
   interval = setInterval(() => {
-    if (isPaused) return;
-    const elapsed = Date.now() - startedAt;
+    const elapsed = isPaused
+      ? pausedAtTime
+        ? pausedAtTime - startedAt
+        : initElapsed
+      : Date.now() - startedAt;
     bar.style.width = Math.min((elapsed / total) * 100, 100) + "%";
 
     if (elapsed >= total) {
@@ -124,8 +131,9 @@ chrome.storage.local.get(
   ["pomodoroState", "pomodoroStartedAt", "cycleCount", "pausedAt"],
   ({ pomodoroState, pomodoroStartedAt, cycleCount = 0, pausedAt }) => {
     isPaused = !!pausedAt;
+    pausedAtTime = pausedAt || null;
     if (pomodoroState) {
-      startLoop(pomodoroState, pomodoroStartedAt, cycleCount);
+      startLoop(pomodoroState, pomodoroStartedAt, cycleCount, pausedAtTime);
     }
   }
 );
@@ -135,18 +143,25 @@ chrome.storage.onChanged.addListener((changes, area) => {
   if (area !== "local") return;
   if (changes.pausedAt) {
     isPaused = !!changes.pausedAt.newValue;
+    pausedAtTime = changes.pausedAt.newValue || null;
   }
 
   if (
     changes.pomodoroState ||
     changes.pomodoroStartedAt ||
-    changes.cycleCount
+    changes.cycleCount ||
+    changes.pausedAt
   ) {
     chrome.storage.local.get(
-      ["pomodoroState", "pomodoroStartedAt", "cycleCount"],
-      ({ pomodoroState, pomodoroStartedAt, cycleCount = 0 }) => {
+      ["pomodoroState", "pomodoroStartedAt", "cycleCount", "pausedAt"],
+      ({ pomodoroState, pomodoroStartedAt, cycleCount = 0, pausedAt }) => {
         if (pomodoroState) {
-          startLoop(pomodoroState, pomodoroStartedAt, cycleCount);
+          startLoop(
+            pomodoroState,
+            pomodoroStartedAt,
+            cycleCount,
+            pausedAt || null
+          );
         } else {
           clearInterval(interval);
           clearInterval(flashTimer);
