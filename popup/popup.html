@@ -7,20 +7,85 @@
       body {
         font-family: sans-serif;
         padding: 10px;
-        min-width: 120px;
-        background-color: rgba(255, 255, 255, 0.5);
+        min-width: 155px;
+        height: 140px;
+        background-color: #37393e;
+        border: none;
       }
       button {
         width: 100%;
         padding: 8px;
         font-size: 14px;
+        margin-bottom: 15px;
+        font-weight: bold;
+      }
+      #startBtn {
+        background-color: #366181;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        transition: background-color 0.2s ease;
+        cursor: pointer;
+      }
+      #startBtn:hover {
+        background-color: #457a9e;
+      }
+      #pauseBtn {
+        background-color: #1d5d1f;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        transition: background-color 0.2s ease;
+        cursor: pointer;
+      }
+      #pauseBtn:hover {
+        background-color: #319834;
+      }
+      #resetBtn {
+        background-color: #651a1a;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        transition: background-color 0.2s ease;
+        cursor: pointer;
+      }
+      #resetBtn:hover {
+        background-color: #ac2d2d;
+      }
+      #state {
+        text-align: center;
+        font-size: 12px;
+        color: #fff;
+        margin-bottom: 10px;
+      }
+      #cycle {
+        text-align: center;
+        font-weight: bold;
+        font-size: 16px;
+        margin-bottom: 7px;
+        margin-top: 7px;
+        color: #fff;
+      }
+      #instructions {
+        font-size: 11px;
+        color: #e2e2e2;
+        line-height: 1.6;
+        margin-top: 19px;
       }
     </style>
   </head>
   <body>
+    <div id="cycle"></div>
+    <div id="state">loading...</div>
     <button id="startBtn">Start Pomodoro</button>
-    <button id="pauseBtn">Pause</button>
-    <button id="resetBtn">Reset</button>
+    <div id="instructions">
+      1. Focus (25 min)<br />
+      2. Take a short break (5 min)<br />
+      3. Repeat Steps 1 & 2 (4 times)<br />
+      4. Take a long break (30 min)
+    </div>
+    <button id="pauseBtn" style="display: none">Pause</button>
+    <button id="resetBtn" style="display: none">End</button>
 
     <script src="popup.js"></script>
   </body>

@@ -3,9 +3,9 @@ let isPaused = false;
 let flashTimer = null;
 
 const DURATIONS = {
-  work: 25 * 60 * 10,
-  short: 5 * 60 * 10,
-  long: 30 * 60 * 10,
+  work: 25 * 60 * 1000,
+  short: 5 * 60 * 1000,
+  long: 30 * 60 * 1000,
   flash: 3 * 1000,
 };
 const FLASH_INTERVAL = 250;
@@ -103,7 +103,6 @@ function startLoop(state, startedAt, cycleCount) {
 
   const total = DURATIONS[state];
   const bar = createBarIfNeeded();
-  instantReset(bar);
   bar.style.backgroundColor = COLOURS[state];
   bar.parentElement.style.display = "block";
 
