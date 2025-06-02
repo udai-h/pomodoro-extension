@@ -95,7 +95,7 @@ pauseBtn.addEventListener("click", () => {
     ["pausedAt", "pomodoroStartedAt"],
     ({ pausedAt, pomodoroStartedAt }) => {
       if (pausedAt) {
-        // RSUME
+        // RESUME
         const shift = Date.now() - pausedAt;
         const newStart = pomodoroStartedAt + shift;
         chrome.storage.local.set({ pomodoroStartedAt: newStart }, () =>

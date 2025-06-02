@@ -3,10 +3,10 @@
   "name": "Pomodoro Bar",
   "version": "1.0",
   "description": "A minimal Pomodoro timer with a simple visual progress bar.",
-  "permissions": ["scripting", "storage", "tabs"],
+  "permissions": ["storage", "tabs"],
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
+      "matches": ["http://*/*", "https://*/*"],
       "js": ["content.js"],
       "css": ["style.css"]
     }
