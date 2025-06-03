@@ -3,7 +3,7 @@
   "name": "Pomodoro Bar",
   "version": "1.0",
   "description": "A minimal Pomodoro timer with a simple visual progress bar.",
-  "permissions": ["storage", "tabs"],
+  "permissions": ["storage"],
   "content_scripts": [
     {
       "matches": ["http://*/*", "https://*/*"],
